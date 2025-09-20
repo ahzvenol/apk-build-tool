@@ -1,12 +1,11 @@
-import fs from 'fs/promises'
+import fs from 'fs-extra'
 import path from 'path'
-import { getBuildToolsPaths } from './buildTools'
 import { getKeyProperties, signApk } from './signer'
-import { copyDir, getLibPath, replaceTextInFolder } from './files'
-import { getJavaPaths } from './java'
+import { replaceTextInFolder } from './files'
 import { executeCommand } from './exec'
 import { BuildInfo, BuildResult, ProgressCallback } from './types'
 import { getProjectInfo, isValidPackageName } from './project'
+import { getApksignerPath, getJavaPath, getKeytoolPath, getLibPath, getZipalignPath } from './path'
 
 const noOpProgress: ProgressCallback = () => {}
 
@@ -154,7 +153,9 @@ const build = async ({
     }
   }
 
-  const { javaPath, keytoolPath } = await getJavaPaths(libPath)
+  const javaPath = await getJavaPath()
+
+  const keytoolPath = await getKeytoolPath()
 
   if (!javaPath || !keytoolPath) {
     console.error('JDK not found')
@@ -165,7 +166,9 @@ const build = async ({
     }
   }
 
-  const { apksignerPath, zipalignPath } = await getBuildToolsPaths(libPath)
+  const apksignerPath = await getApksignerPath()
+
+  const zipalignPath = await getZipalignPath()
 
   if (!apksignerPath || !zipalignPath) {
     console.error('Build tools not found')
@@ -313,7 +316,7 @@ const build = async ({
     console.log(`Copying engine from ${engineSrcPath} to ${engineDestPath}`)
     onProgress({ message: 'copying_engine', stage: 'RUNNING', percentage: 35 })
 
-    await copyDir(engineSrcPath, engineDestPath)
+    await fs.copy(engineSrcPath, engineDestPath)
     console.log('Engine copied successfully')
 
     // 删除不需要的文件
@@ -331,7 +334,7 @@ const build = async ({
     console.log(`Copying game resources from ${webgalSrcPath} to ${webgalDestPath}`)
     onProgress({ message: 'copying_game_assets', stage: 'RUNNING', percentage: 40 })
 
-    await copyDir(webgalSrcPath, webgalDestPath)
+    await fs.copy(webgalSrcPath, webgalDestPath)
     console.log('Game resources copied successfully')
 
     // 复制图标
@@ -346,7 +349,7 @@ const build = async ({
     if (iconSrcIsExists) {
       console.log(`Copying icons from ${iconsPath} to ${resPath}`)
       onProgress({ message: 'copying_icons', stage: 'RUNNING', percentage: 60 })
-      await copyDir(iconsPath, resPath)
+      await fs.copy(iconsPath, resPath)
     } else {
       console.log('Skip copying icons')
     }

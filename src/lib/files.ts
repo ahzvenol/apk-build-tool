@@ -1,10 +1,6 @@
 import fs from 'fs/promises'
 import path from 'path'
 
-export const getExecPath = (): string => path.dirname(process.execPath)
-
-export const getLibPath = (): string => path.join(getExecPath(), 'lib')
-
 export const replaceTextInFolder = async (
   folderPath: string,
   oldText: string,
@@ -37,22 +33,5 @@ export const replaceTextInFolder = async (
     }
   } catch (error) {
     console.error(`Error reading directory ${folderPath}:`, error)
-  }
-}
-
-export const copyDir = async (src: string, dest: string): Promise<void> => {
-  await fs.mkdir(dest, { recursive: true })
-
-  const entries = await fs.readdir(src, { withFileTypes: true })
-
-  for (const entry of entries) {
-    const srcPath = path.join(src, entry.name)
-    const destPath = path.join(dest, entry.name)
-
-    if (entry.isDirectory()) {
-      await copyDir(srcPath, destPath)
-    } else {
-      await fs.copyFile(srcPath, destPath)
-    }
   }
 }

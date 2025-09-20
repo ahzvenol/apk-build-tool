@@ -1,4 +1,4 @@
-import { spawn, spawnSync } from 'child_process'
+import { spawn } from 'child_process'
 
 export const executeCommand = async (
   command: string,
@@ -32,16 +32,4 @@ export const executeCommand = async (
       reject(error)
     }
   })
-}
-
-export const findExecutable = async (command: string): Promise<string | null> => {
-  try {
-    const process = spawnSync(command)
-    if (process.error) {
-      return null
-    }
-    return command
-  } catch (_error) {
-    return null
-  }
 }

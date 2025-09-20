@@ -29,7 +29,9 @@
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.1",
-    "@electron-toolkit/utils": "^4.0.0"
+    "@electron-toolkit/utils": "^4.0.0",
+    "fs-extra": "^11.3.2",
+    "which": "^5.0.0"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",
@@ -37,10 +39,12 @@
     "@electron-toolkit/tsconfig": "^1.0.1",
     "@fluentui/react-components": "^9.64.0",
     "@fluentui/react-icons": "^2.0.302",
+    "@types/fs-extra": "^11.0.4",
     "@types/lodash": "^4.17.17",
     "@types/node": "^22.14.1",
     "@types/react": "18.3.22",
     "@types/react-dom": "18.3.7",
+    "@types/which": "^3.0.4",
     "@vitejs/plugin-react": "^4.3.4",
     "bun": "^1.2.14",
     "electron": "36.3.1",

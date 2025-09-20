@@ -1,8 +1,8 @@
 import fs from 'fs/promises'
 import { executeCommand } from './exec'
-import { getJavaPaths } from './java'
 import path from 'path'
 import { Dname, Keystore } from './types'
+import { getKeytoolPath, getLibPath } from './path'
 
 export const getKeyProperties = async (projectPath: string): Promise<Keystore | null> => {
   const keystore: Keystore = {
@@ -182,8 +182,8 @@ export const signApk = async (
   )
 }
 
-export const createDebugKeystore = async (libPath: string): Promise<Keystore | null> => {
-  const keystorePath = path.join(libPath, 'debug.keystore')
+export const createDebugKeystore = async (): Promise<Keystore | null> => {
+  const keystorePath = path.join(getLibPath(), 'debug.keystore')
   const keystore: Keystore = {
     storeFile: keystorePath,
     storePassword: 'android',
@@ -191,7 +191,7 @@ export const createDebugKeystore = async (libPath: string): Promise<Keystore | n
     keyPassword: 'android'
   }
 
-  const { keytoolPath } = await getJavaPaths(libPath)
+  const keytoolPath = await getKeytoolPath()
 
   if (!keytoolPath) {
     return null
