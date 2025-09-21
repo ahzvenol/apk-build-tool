@@ -2,14 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import styles from './app.module.css'
 import {
   Button,
-  Combobox,
-  Dialog,
-  DialogActions,
-  DialogBody,
-  DialogContent,
-  DialogSurface,
-  DialogTitle,
-  DialogTrigger,
   Field,
   InfoLabel,
   Input,
@@ -19,62 +11,45 @@ import {
   MenuList,
   MenuPopover,
   MenuTrigger,
-  Option,
   ProgressBar,
   Text,
   Title3
 } from '@fluentui/react-components'
 import { bundleIcon, LocalLanguageFilled, LocalLanguageRegular } from '@fluentui/react-icons'
 import { version } from '~build/package'
-import { BuildResult, Keystore, ProgressData, ProjectInfo } from 'src/lib/types'
-import useSWR from 'swr'
+import { BuildResult, ProgressData, AppInfo, SignConfig, BuildOptions } from 'src/lib/types'
 import useLocalStorage from './hooks/useLocalStorage'
-import {
-  buildApk,
-  createKeystore,
-  openOutputFolder,
-  saveKeyProperties,
-  saveProjectInfo,
-  selectFolder,
-  selectKeystore,
-  selectSaveKeystore
-} from './invoke'
+import { buildApk, openOutputFolder, selectFolder, selectKeystore } from './invoke'
 import { getTranslations, Language, languages } from '../../locales/i18n'
+import { NewKeystore } from './NewKeystore'
 
 const LocalLanguageIcon = bundleIcon(LocalLanguageFilled, LocalLanguageRegular)
 
-const App = (): React.JSX.Element => {
-  const emptyKeystore: Keystore = {
-    storeFile: '',
-    storePassword: '',
-    keyAlias: '',
-    keyPassword: '',
-    validity: 25,
-    dname: {
-      firstAndLastName: '',
-      organizationalUnit: '',
-      organization: '',
-      cityOrLocality: '',
-      stateOrProvince: '',
-      countryCode: ''
-    }
-  }
+const initialAppInfo: AppInfo = {
+  appName: '',
+  packageName: '',
+  versionName: '1.0.0',
+  versionCode: 1
+}
 
-  const [projectPath, setProjectPath] = useState<string | null>(null)
-  const [projectInfo, setProjectInfo] = useState<ProjectInfo | null>(null)
-  const [allProjectInfo, setAllprojectInfo] = useState<ProjectInfo[]>([])
-  const [keystore, setKeystore] = useState<Keystore | null>(null)
-  const [newKeystore, setNewKeystore] = useState<Keystore>(emptyKeystore)
+const initialSignConfig: SignConfig = {
+  storeFile: '',
+  storePassword: '',
+  keyAlias: '',
+  keyPassword: ''
+}
+
+const App = (): React.JSX.Element => {
+  const [distPath, setDistPath] = useState<string | null>(null)
+  const [appInfo, setAppInfo] = useLocalStorage<AppInfo>('appInfo', initialAppInfo)
+  const [signConfig, setSignConfig] = useLocalStorage<SignConfig>('signConfig', initialSignConfig)
+
   const [progress, setProgress] = useState<ProgressData | null>(null)
   const [buildResult, setBuildResult] = useState<BuildResult | null>(null)
   const [open, setOpen] = useState(false)
-  const [isFileDialogActive, setIsFileDialogActive] = useState(false)
 
-  const [language, setLanguage] = useState<Language>(languages.zhCn)
+  const [language, setLanguage] = useLocalStorage<Language>('language', languages.zhCn)
   const t = useMemo(() => getTranslations(language), [language])
-
-  useLocalStorage('language', languages.zhCn, language, setLanguage)
-  useLocalStorage('projectPath', null, projectPath, setProjectPath)
 
   const isValidPackageName = (packageName: string): boolean => {
     const regex = /^(?=[a-z])(?=.*\.)[a-z0-9_.]*[a-z0-9]$/
@@ -83,61 +58,36 @@ const App = (): React.JSX.Element => {
 
   const build = async (): Promise<void> => {
     setBuildResult(null)
-    if (projectPath === null) return
-    const result = await buildApk(projectPath)
+    const options: BuildOptions = {
+      distPath: distPath!,
+      appInfo: appInfo,
+      signConfig: signConfig!
+      // outputPath: distPath!
+    }
+    const result = await buildApk(options)
     console.log(result)
     setBuildResult(result)
-    openOutputFolder(projectPath)
+    openOutputFolder(distPath!)
   }
 
   const disableBuild = useMemo(
     () =>
-      !projectPath ||
-      projectPath.length === 0 ||
-      !projectInfo ||
-      projectInfo.appName.length === 0 ||
-      projectInfo.packageName.length === 0 ||
-      !isValidPackageName(projectInfo.packageName) ||
-      projectInfo.versionName.length === 0 ||
-      projectInfo.versionCode === 0 ||
-      !keystore ||
-      keystore.storeFile.length === 0 ||
-      keystore.storePassword.length < 6 ||
-      keystore.keyAlias.length === 0 ||
-      keystore.keyPassword.length < 6 ||
+      !distPath ||
+      distPath.length === 0 ||
+      !appInfo ||
+      appInfo.appName.length === 0 ||
+      appInfo.packageName.length === 0 ||
+      !isValidPackageName(appInfo.packageName) ||
+      appInfo.versionName.length === 0 ||
+      appInfo.versionCode === 0 ||
+      !signConfig ||
+      signConfig.storeFile.length === 0 ||
+      signConfig.storePassword.length < 6 ||
+      signConfig.keyAlias.length === 0 ||
+      signConfig.keyPassword.length < 6 ||
       progress?.stage === 'RUNNING' ||
       progress?.stage === 'INITIALIZING',
-    [projectPath, projectInfo, keystore, progress]
-  )
-
-  useSWR(
-    projectPath ? ['get-project-info', projectPath] : null,
-    async ([_event, path]: [string, string]): Promise<ProjectInfo | null> => {
-      const info = await window.electron.ipcRenderer.invoke('get-project-info', path)
-      setProjectInfo(info)
-      return info
-    }
-  )
-
-  useSWR(
-    projectPath ? ['get-key-properties', projectPath] : null,
-    async ([_event, path]: [string, string]): Promise<Keystore | null> => {
-      const keystore = await window.electron.ipcRenderer.invoke('get-key-properties', path)
-      setKeystore(keystore)
-      return keystore
-    },
-    {
-      revalidateOnFocus: !isFileDialogActive
-    }
-  )
-
-  useSWR(
-    projectPath ? ['get-all-project-info', `${projectPath}/..`] : null,
-    async ([_event, path]: [string, string]): Promise<ProjectInfo[]> => {
-      const info = await window.electron.ipcRenderer.invoke('get-all-project-info', path)
-      setAllprojectInfo(info)
-      return info
-    }
+    [distPath, appInfo, signConfig, progress]
   )
 
   useEffect(() => {
@@ -206,39 +156,19 @@ const App = (): React.JSX.Element => {
         </div>
         <Text>{t.project_path}</Text>
         <div className={styles.inputContainer}>
-          <Combobox
-            key={projectPath}
+          <Input
             style={{ flex: 1 }}
-            value={projectPath || ''}
-            selectedOptions={projectPath ? [projectPath] : []}
-            onOptionSelect={(_ev, data) => data.optionValue && setProjectPath(data.optionValue)}
-          >
-            {allProjectInfo.map((item) => (
-              <Option key={item.path} value={item.path} text={item.appName}>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    paddingLeft: '0.25rem',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    textWrap: 'nowrap'
-                  }}
-                >
-                  <div style={{ fontWeight: '500' }}>{item.appName}</div>
-                  <div style={{ color: 'gray', fontSize: '0.8rem' }}>{item.packageName}</div>
-                  {item.path}
-                </div>
-              </Option>
-            ))}
-          </Combobox>
+            value={distPath || ''}
+            onChange={(_ev, data) => setDistPath(data.value)}
+          />
+
           <Button
             appearance="primary"
             style={{ minWidth: '0' }}
             onClick={async () => {
               const result = await selectFolder()
               if (!result) return
-              setProjectPath(result)
+              setDistPath(result)
               setBuildResult(null)
               setProgress(null)
             }}
@@ -246,18 +176,17 @@ const App = (): React.JSX.Element => {
             {t.select}
           </Button>
         </div>
-        {projectPath && projectInfo && (
+        {distPath && appInfo && (
           <>
             <Text>{t.app_name}</Text>
             <div className={styles.inputContainer}>
               <Input
                 type="text"
                 style={{ flex: 1 }}
-                value={projectInfo.appName}
+                value={appInfo.appName}
                 onChange={(_ev, data) => {
-                  const newProjectInfo = { ...projectInfo, appName: data.value }
-                  setProjectInfo(newProjectInfo)
-                  saveProjectInfo(projectPath, newProjectInfo)
+                  const newProjectInfo = { ...appInfo, appName: data.value }
+                  setAppInfo(newProjectInfo)
                 }}
               />
             </div>
@@ -271,11 +200,10 @@ const App = (): React.JSX.Element => {
                 spellCheck={false}
                 type="text"
                 style={{ flex: 1 }}
-                value={projectInfo.packageName}
+                value={appInfo.packageName}
                 onChange={(_ev, data) => {
-                  const newProjectInfo = { ...projectInfo, packageName: data.value }
-                  setProjectInfo(newProjectInfo)
-                  saveProjectInfo(projectPath, newProjectInfo)
+                  const newProjectInfo = { ...appInfo, packageName: data.value }
+                  setAppInfo(newProjectInfo)
                 }}
               />
             </div>
@@ -285,11 +213,10 @@ const App = (): React.JSX.Element => {
               <Input
                 type="text"
                 style={{ flex: 1 }}
-                value={projectInfo.versionName}
+                value={appInfo.versionName}
                 onChange={(_ev, data) => {
-                  const newProjectInfo = { ...projectInfo, versionName: data.value }
-                  setProjectInfo(newProjectInfo)
-                  saveProjectInfo(projectPath, newProjectInfo)
+                  const newProjectInfo = { ...appInfo, versionName: data.value }
+                  setAppInfo(newProjectInfo)
                 }}
               />
             </div>
@@ -304,266 +231,40 @@ const App = (): React.JSX.Element => {
                 step={1}
                 min={1}
                 style={{ flex: 1 }}
-                value={projectInfo.versionCode.toString()}
+                value={appInfo.versionCode.toString()}
                 onChange={(_ev, data) => {
                   const newProjectInfo = {
-                    ...projectInfo,
+                    ...appInfo,
                     versionCode: Number(data.value) || 1
                   }
-                  setProjectInfo(newProjectInfo)
-                  saveProjectInfo(projectPath, newProjectInfo)
+                  setAppInfo(newProjectInfo)
                 }}
               />
             </div>
           </>
         )}
-        {keystore && projectInfo && (
+        {signConfig && appInfo && (
           <>
             <Text>{t.keystore_file_path}</Text>
             <div className={styles.inputContainer}>
               <Input
                 type="text"
                 style={{ flex: 1 }}
-                value={keystore.storeFile}
+                value={signConfig.storeFile}
                 onChange={(_ev, data) => {
-                  setKeystore({ ...keystore, storeFile: data.value })
-                  saveKeyProperties(projectPath, { ...keystore, storeFile: data.value })
+                  setSignConfig({ ...signConfig, storeFile: data.value })
                 }}
               />
 
-              <Dialog
-                open={open}
-                onOpenChange={(_event, isOpen) => {
-                  setOpen(isOpen.open)
-                  setNewKeystore(emptyKeystore)
-                }}
-              >
-                <DialogTrigger disableButtonEnhancement>
-                  <Button appearance="primary" style={{ minWidth: '0' }}>
-                    {t.new}
-                  </Button>
-                </DialogTrigger>
-                <DialogSurface>
-                  <DialogBody>
-                    <DialogTitle>{t.create_keystore_dialog_title}</DialogTitle>
-                    <DialogContent className={styles.container}>
-                      <Text>
-                        {t.keystore_file_path} <span style={{ color: 'red' }}>*</span>
-                      </Text>
-                      <div className={styles.inputContainer}>
-                        <Input
-                          type="text"
-                          style={{ flex: 1 }}
-                          value={newKeystore.storeFile}
-                          onChange={(_ev, data) => {
-                            setNewKeystore({ ...newKeystore, storeFile: data.value })
-                          }}
-                        />
-                        <Button
-                          appearance="primary"
-                          style={{ minWidth: '0' }}
-                          onClick={async () => {
-                            const result = await selectSaveKeystore()
-                            if (!result) return
-                            setNewKeystore({ ...newKeystore, storeFile: result })
-                          }}
-                        >
-                          {t.select}
-                        </Button>
-                      </div>
-
-                      <Text>
-                        {t.keystore_password} <InfoLabel info={t.keystore_password_info} required />
-                      </Text>
-                      <div className={styles.inputContainer}>
-                        <Input
-                          type="password"
-                          style={{ flex: 1 }}
-                          value={newKeystore.storePassword}
-                          onChange={(_ev, data) => {
-                            setNewKeystore({ ...newKeystore, storePassword: data.value })
-                          }}
-                        />
-                      </div>
-
-                      <Text>
-                        {t.key_alias} <span style={{ color: 'red' }}>*</span>
-                      </Text>
-                      <div className={styles.inputContainer}>
-                        <Input
-                          type="text"
-                          style={{ flex: 1 }}
-                          value={newKeystore.keyAlias}
-                          onChange={(_ev, data) => {
-                            setNewKeystore({ ...newKeystore, keyAlias: data.value })
-                          }}
-                        />
-                      </div>
-
-                      <Text>
-                        {t.key_password}
-                        <InfoLabel info={t.keystore_password_info} required />
-                      </Text>
-                      <div className={styles.inputContainer}>
-                        <Input
-                          type="password"
-                          style={{ flex: 1 }}
-                          value={newKeystore.keyPassword}
-                          onChange={(_ev, data) => {
-                            setNewKeystore({ ...newKeystore, keyPassword: data.value })
-                          }}
-                        />
-                      </div>
-
-                      <Text>
-                        {t.validity_years} <span style={{ color: 'red' }}>*</span>
-                      </Text>
-                      <div className={styles.inputContainer}>
-                        <Input
-                          type="number"
-                          step={1}
-                          min={1}
-                          style={{ flex: 1 }}
-                          value={newKeystore.validity?.toString()}
-                          onChange={(_ev, data) => {
-                            setNewKeystore({ ...newKeystore, validity: Number(data.value) })
-                          }}
-                        />
-                      </div>
-
-                      <Text>
-                        {t.first_and_last_name} <span style={{ color: 'red' }}>*</span>
-                      </Text>
-                      <div className={styles.inputContainer}>
-                        <Input
-                          type="text"
-                          style={{ flex: 1 }}
-                          value={newKeystore.dname?.firstAndLastName || ''}
-                          onChange={(_ev, data) => {
-                            setNewKeystore({
-                              ...newKeystore,
-                              dname: { ...newKeystore.dname, firstAndLastName: data.value }
-                            })
-                          }}
-                        />
-                      </div>
-
-                      <Text>{t.organizational_unit}</Text>
-                      <div className={styles.inputContainer}>
-                        <Input
-                          type="text"
-                          style={{ flex: 1 }}
-                          value={newKeystore.dname?.organizationalUnit || ''}
-                          onChange={(_ev, data) => {
-                            setNewKeystore({
-                              ...newKeystore,
-                              dname: { ...newKeystore.dname, organizationalUnit: data.value }
-                            })
-                          }}
-                        />
-                      </div>
-
-                      <Text>{t.organization}</Text>
-                      <div className={styles.inputContainer}>
-                        <Input
-                          type="text"
-                          style={{ flex: 1 }}
-                          value={newKeystore.dname?.organization || ''}
-                          onChange={(_ev, data) => {
-                            setNewKeystore({
-                              ...newKeystore,
-                              dname: { ...newKeystore.dname, organization: data.value }
-                            })
-                          }}
-                        />
-                      </div>
-
-                      <Text>{t.city_or_locality}</Text>
-                      <div className={styles.inputContainer}>
-                        <Input
-                          type="text"
-                          style={{ flex: 1 }}
-                          value={newKeystore.dname?.cityOrLocality || ''}
-                          onChange={(_ev, data) => {
-                            setNewKeystore({
-                              ...newKeystore,
-                              dname: { ...newKeystore.dname, cityOrLocality: data.value }
-                            })
-                          }}
-                        />
-                      </div>
-
-                      <Text>{t.state_or_province}</Text>
-                      <div className={styles.inputContainer}>
-                        <Input
-                          type="text"
-                          style={{ flex: 1 }}
-                          value={newKeystore.dname?.stateOrProvince || ''}
-                          onChange={(_ev, data) => {
-                            setNewKeystore({
-                              ...newKeystore,
-                              dname: { ...newKeystore.dname, stateOrProvince: data.value }
-                            })
-                          }}
-                        />
-                      </div>
-
-                      <Text>{t.country_code}</Text>
-                      <div className={styles.inputContainer}>
-                        <Input
-                          type="text"
-                          style={{ flex: 1 }}
-                          value={newKeystore.dname?.countryCode || ''}
-                          onChange={(_ev, data) => {
-                            setNewKeystore({
-                              ...newKeystore,
-                              dname: { ...newKeystore.dname, countryCode: data.value }
-                            })
-                          }}
-                        />
-                      </div>
-                    </DialogContent>
-                    <DialogActions>
-                      <DialogTrigger disableButtonEnhancement>
-                        <Button onClick={() => setNewKeystore(emptyKeystore)}>{t.cancel}</Button>
-                      </DialogTrigger>
-                      <Button
-                        appearance="primary"
-                        disabled={
-                          !newKeystore.storeFile ||
-                          !newKeystore.storePassword ||
-                          newKeystore.storePassword.length < 6 ||
-                          !newKeystore.keyAlias ||
-                          !newKeystore.keyPassword ||
-                          newKeystore.keyPassword.length < 6 ||
-                          !newKeystore.dname ||
-                          !newKeystore.dname.firstAndLastName
-                        }
-                        onClick={async () => {
-                          const keystore = await createKeystore(newKeystore)
-                          if (!keystore) return
-                          setKeystore(keystore)
-                          saveKeyProperties(projectPath, keystore)
-                          setOpen(false)
-                        }}
-                      >
-                        {t.create}
-                      </Button>
-                    </DialogActions>
-                  </DialogBody>
-                </DialogSurface>
-              </Dialog>
+              <NewKeystore open={open} setOpen={setOpen} setKeystore={setSignConfig}></NewKeystore>
 
               <Button
                 appearance="primary"
                 style={{ minWidth: '0' }}
                 onClick={async () => {
-                  setIsFileDialogActive(true)
                   const result = await selectKeystore()
                   if (!result) return
-                  setKeystore({ ...keystore, storeFile: result })
-                  saveKeyProperties(projectPath, { ...keystore, storeFile: result })
-                  setTimeout(() => setIsFileDialogActive(false), 500)
+                  setSignConfig({ ...signConfig, storeFile: result })
                 }}
               >
                 {t.select}
@@ -577,10 +278,9 @@ const App = (): React.JSX.Element => {
               <Input
                 type="password"
                 style={{ flex: 1 }}
-                value={keystore.storePassword}
+                value={signConfig.storePassword}
                 onChange={(_ev, data) => {
-                  setKeystore({ ...keystore, storePassword: data.value })
-                  saveKeyProperties(projectPath, { ...keystore, storePassword: data.value })
+                  setSignConfig({ ...signConfig, storePassword: data.value })
                 }}
               />
             </div>
@@ -592,10 +292,9 @@ const App = (): React.JSX.Element => {
               <Input
                 type="text"
                 style={{ flex: 1 }}
-                value={keystore.keyAlias}
+                value={signConfig.keyAlias}
                 onChange={(_ev, data) => {
-                  setKeystore({ ...keystore, keyAlias: data.value })
-                  saveKeyProperties(projectPath, { ...keystore, keyAlias: data.value })
+                  setSignConfig({ ...signConfig, keyAlias: data.value })
                 }}
               />
             </div>
@@ -607,10 +306,9 @@ const App = (): React.JSX.Element => {
               <Input
                 type="password"
                 style={{ flex: 1 }}
-                value={keystore.keyPassword}
+                value={signConfig.keyPassword}
                 onChange={(_ev, data) => {
-                  setKeystore({ ...keystore, keyPassword: data.value })
-                  saveKeyProperties(projectPath, { ...keystore, keyPassword: data.value })
+                  setSignConfig({ ...signConfig, keyPassword: data.value })
                 }}
               />
             </div>
@@ -618,7 +316,7 @@ const App = (): React.JSX.Element => {
         )}
       </div>
 
-      {projectPath && projectInfo && (
+      {distPath && appInfo && (
         <div
           style={{
             backgroundColor: '#f0f0f0',
@@ -642,7 +340,7 @@ const App = (): React.JSX.Element => {
               <Button
                 appearance="primary"
                 style={{ width: '100%' }}
-                onClick={() => openOutputFolder(projectPath)}
+                onClick={() => openOutputFolder(distPath)}
               >
                 {t.open_output_folder}
               </Button>

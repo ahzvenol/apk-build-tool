@@ -1,155 +1,50 @@
 import fs from 'fs-extra'
 import path from 'path'
-import { getKeyProperties, signApk } from './signer'
+import { signApk } from './signer'
 import { replaceTextInFolder } from './files'
 import { executeCommand } from './exec'
-import { BuildInfo, BuildResult, ProgressCallback } from './types'
-import { getProjectInfo, isValidPackageName } from './project'
-import { getApksignerPath, getJavaPath, getKeytoolPath, getLibPath, getZipalignPath } from './path'
+import { BuildOptions, BuildResult, ProgressCallback } from './types'
+import {
+  getApkEditorPath,
+  getApksignerPath,
+  getJavaPath,
+  getKeytoolPath,
+  getTemplateApkPath,
+  getZipalignPath
+} from './path'
 
 const noOpProgress: ProgressCallback = () => {}
 
-export const buildApk = async (
-  projectPath: string,
+export const build = async (
+  { appInfo, distPath, signConfig }: BuildOptions,
   onProgress: ProgressCallback = noOpProgress
 ): Promise<BuildResult> => {
   onProgress({ message: 'initializing', stage: 'INITIALIZING', percentage: 0 })
 
-  const libPath = getLibPath()
-
-  const projectInfo = await getProjectInfo(projectPath)
+  const outputPath = path.dirname(distPath)
 
   onProgress({ message: 'checking_project_info', stage: 'RUNNING', percentage: 5 })
-
-  if (!projectInfo) {
-    onProgress({ message: 'project_info_not_found', stage: 'ERROR', percentage: 100 })
-    return {
-      success: false,
-      message: ''
-    }
-  }
-
-  if (projectInfo.appName === null || projectInfo.appName.length === 0) {
-    onProgress({ message: 'app_name_not_found', stage: 'ERROR', percentage: 100 })
-    return {
-      success: false,
-      message: 'App name not found'
-    }
-  }
-
-  if (!isValidPackageName(projectInfo.packageName)) {
-    onProgress({ message: 'package_name_invalid', stage: 'ERROR', percentage: 100 })
-    return {
-      success: false,
-      message: 'Package name is invalid'
-    }
-  }
-
-  if (projectInfo.packageName === null || projectInfo.packageName.length === 0) {
-    onProgress({ message: 'package_name_not_found', stage: 'ERROR', percentage: 100 })
-    return {
-      success: false,
-      message: 'Package name not found'
-    }
-  }
-
-  if (projectInfo.versionName === null || projectInfo.versionName.length === 0) {
-    onProgress({ message: 'version_name_not_found', stage: 'ERROR', percentage: 100 })
-    return {
-      success: false,
-      message: 'Version name not found'
-    }
-  }
-
-  if (projectInfo.versionCode === null || projectInfo.versionCode === 0) {
-    onProgress({ message: 'version_code_error', stage: 'ERROR', percentage: 100 })
-    return {
-      success: false,
-      message: 'Version code error'
-    }
-  }
-
-  let keystore = await getKeyProperties(projectPath)
-
-  if (
-    !keystore ||
-    keystore.storeFile.length === 0 ||
-    keystore.storePassword.length === 0 ||
-    keystore.keyAlias.length === 0 ||
-    keystore.keyPassword.length === 0
-  ) {
-    onProgress({ message: 'keystore_info_missing_skip_signing', stage: 'WARNING', percentage: 10 })
-    console.error('\nKeystore info missing, skip signing')
-    keystore = null
-  }
-
-  const buildInfo: BuildInfo = {
-    projectInfo,
-    projectPath,
-    outputPath: path.join(
-      projectPath,
-      '..',
-      '..',
-      '..',
-      'Exported_Games',
-      projectPath.split(path.sep).pop()!,
-      'apk'
-    ),
-    libPath,
-    keystore,
-    onProgress
-  }
-
   onProgress({ message: 'preparing', stage: 'RUNNING', percentage: 10 })
 
-  return await build(buildInfo)
-}
+  const templateApkPath = await getTemplateApkPath()
 
-const build = async ({
-  projectInfo,
-  projectPath,
-  outputPath,
-  libPath,
-  keystore,
-  onProgress
-}: BuildInfo): Promise<BuildResult> => {
-  const apkEditorPath = path.join(libPath, 'APKEditor.jar')
+  if (!templateApkPath) {
+    console.error(`Template apk not found at: ${templateApkPath}`)
+    onProgress({ message: 'template_apk_not_found', stage: 'ERROR', percentage: 100 })
+    return {
+      success: false,
+      message: 'Template apk not found'
+    }
+  }
 
-  try {
-    await fs.access(apkEditorPath)
-  } catch (error) {
+  const apkEditorPath = await getApkEditorPath()
+
+  if (!apkEditorPath) {
     console.error(`APKEditor not found at: ${apkEditorPath}`)
     onProgress({ message: 'apkeditor_not_found', stage: 'ERROR', percentage: 100 })
     return {
       success: false,
-      message: 'APKEditor not found',
-      error
-    }
-  }
-
-  const webgalTemplateApkPaths = [
-    path.join(projectPath, '..', '..', '..', 'assets', 'templates', 'webgal-template.apk'),
-    path.join(libPath, 'webgal-template.apk')
-  ]
-
-  let webgalTemplateApkPath: string | null = null
-  for (const path of webgalTemplateApkPaths) {
-    try {
-      await fs.access(path)
-      webgalTemplateApkPath = path
-      console.log(`WebGAL template found at: ${webgalTemplateApkPath}`)
-      break
-    } catch (_error) {
-      /* empty */
-    }
-  }
-
-  if (!webgalTemplateApkPath) {
-    console.error(`WebGAL template not found at: ${webgalTemplateApkPath}`)
-    onProgress({ message: 'webgal_template_not_found', stage: 'ERROR', percentage: 100 })
-    return {
-      success: false,
-      message: 'WebGAL template not found'
+      message: 'APKEditor not found'
     }
   }
 
@@ -181,7 +76,7 @@ const build = async ({
 
   const buildPath = path.join(outputPath, 'build')
 
-  const { appName, packageName, versionName, versionCode } = projectInfo
+  const { appName, packageName, versionName, versionCode } = appInfo
 
   const apkFileName = [packageName, versionName, `build${versionCode}`].join('-')
   const unsignedApkPath = path.join(outputPath, `${apkFileName}-unsigned.apk`)
@@ -214,7 +109,7 @@ const build = async ({
   try {
     await executeCommand(
       javaPath ?? 'java',
-      ['-jar', apkEditorPath, 'd', '-i', webgalTemplateApkPath, '-o', buildPath],
+      ['-jar', apkEditorPath, 'd', '-i', templateApkPath, '-o', buildPath],
       'APK decompilation'
     )
   } catch (error) {
@@ -240,19 +135,19 @@ const build = async ({
     await replaceTextInFolder(
       buildPath,
       '<string name="app_name">WebGAL</string>',
-      `<string name="app_name">${projectInfo.appName}</string>`
+      `<string name="app_name">${appInfo.appName}</string>`
     )
 
     // 替换版本信息
     await replaceTextInFolder(
       buildPath,
       'android:versionCode="1"',
-      `android:versionCode="${projectInfo.versionCode}"`
+      `android:versionCode="${appInfo.versionCode}"`
     )
     await replaceTextInFolder(
       buildPath,
       'android:versionName="1.0"',
-      `android:versionName="${projectInfo.versionName}"`
+      `android:versionName="${appInfo.versionName}"`
     )
 
     console.log('Replacement completed')
@@ -289,6 +184,7 @@ const build = async ({
 
     // 移动文件夹
     const packagePath = packageName.split('.')
+    // todo:泛化
     const targetDir = path
       .dirname(sourcePath)
       .replace(/com(\/|\\)openwebgal/, packagePath.slice(0, -1).join(path.sep))
@@ -301,44 +197,17 @@ const build = async ({
     await fs.rename(sourcePath, targetPath)
     console.log('Files moved successfully')
 
-    // 复制引擎
-    const engineSrcPath = path.join(
-      projectPath,
-      '..',
-      '..',
-      '..',
-      'assets',
-      'templates',
-      'WebGAL_Template'
-    )
-    const engineDestPath = path.join(buildPath, 'root', 'assets', 'webgal')
-
-    console.log(`Copying engine from ${engineSrcPath} to ${engineDestPath}`)
-    onProgress({ message: 'copying_engine', stage: 'RUNNING', percentage: 35 })
-
-    await fs.copy(engineSrcPath, engineDestPath)
-    console.log('Engine copied successfully')
-
-    // 删除不需要的文件
-    await fs.rm(path.join(engineDestPath, 'game'), { recursive: true, force: true })
-    await fs.rm(path.join(engineDestPath, 'webgal-serviceworker.js'), {
-      recursive: true,
-      force: true
-    })
-    await fs.rm(path.join(engineDestPath, 'icons'), { recursive: true, force: true })
-
     // 复制游戏资源
-    const webgalSrcPath = path.join(projectPath, 'game')
-    const webgalDestPath = path.join(buildPath, 'root', 'assets', 'webgal', 'game')
+    const destPath = path.join(buildPath, 'root', 'assets', 'public')
 
-    console.log(`Copying game resources from ${webgalSrcPath} to ${webgalDestPath}`)
+    console.log(`Copying game resources from ${distPath} to ${destPath}`)
     onProgress({ message: 'copying_game_assets', stage: 'RUNNING', percentage: 40 })
 
-    await fs.copy(webgalSrcPath, webgalDestPath)
+    await fs.copy(distPath, destPath)
     console.log('Game resources copied successfully')
 
     // 复制图标
-    const iconsPath = path.join(projectPath, 'icons', 'android')
+    const iconsPath = path.join(distPath, 'icons')
     const resPath = path.join(buildPath, 'resources', 'package_1', 'res')
 
     const iconSrcIsExists = await fs
@@ -368,7 +237,7 @@ const build = async ({
   // 构建apk
   try {
     await executeCommand(
-      javaPath ?? 'java',
+      javaPath,
       ['-jar', apkEditorPath, 'b', '-i', buildPath, '-o', unsignedApkPath],
       'Build APK'
     )
@@ -412,9 +281,9 @@ const build = async ({
   onProgress({ message: 'signing_apk', stage: 'RUNNING', percentage: 90 })
 
   // 签名
-  if (javaPath && apksignerPath && keystore) {
+  if (javaPath && apksignerPath && signConfig) {
     try {
-      await signApk(javaPath, apksignerPath, keystore, unsignedApkPath, signedApkPath)
+      await signApk(javaPath, apksignerPath, signConfig, unsignedApkPath, signedApkPath)
     } catch (error) {
       console.error('APK signing failed', error)
       onProgress({

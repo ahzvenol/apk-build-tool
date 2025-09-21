@@ -1,12 +1,35 @@
 import { Translations } from '../locales/i18n'
 
-export interface BuildInfo {
-  projectInfo: ProjectInfo
-  projectPath: string
-  outputPath: string
-  libPath: string
-  keystore?: Keystore | null
-  onProgress: ProgressCallback
+export interface AppInfo {
+  appName: string
+  packageName: string
+  versionName: string
+  versionCode: number
+}
+
+// todo:有两个不同用途的Keystore
+export interface SignConfig {
+  storeFile: string
+  storePassword: string
+  keyAlias: string
+  keyPassword: string
+}
+
+export interface Keystore {
+  storeFile: string
+  storePassword: string
+  keyAlias: string
+  keyPassword: string
+  validity?: number
+  dname?: Dname
+}
+
+export interface BuildOptions {
+  distPath: string
+  // outputPath: string
+  appInfo: AppInfo
+  // iconsPath?: string
+  signConfig?: SignConfig
 }
 
 export interface BuildResult {
@@ -31,33 +54,6 @@ export interface ProgressData {
 }
 
 export type ProgressCallback = (progressData: ProgressData) => void
-
-export interface BuildToolsPaths {
-  apksignerPath: string | null
-  zipalignPath: string | null
-}
-
-export interface JavaPaths {
-  javaPath: string | null
-  keytoolPath: string | null
-}
-
-export interface ProjectInfo {
-  appName: string
-  packageName: string
-  versionName: string
-  versionCode: number
-  path?: string
-}
-
-export interface Keystore {
-  storeFile: string
-  storePassword: string
-  keyAlias: string
-  keyPassword: string
-  validity?: number
-  dname?: Dname
-}
 
 export interface Dname {
   firstAndLastName?: string

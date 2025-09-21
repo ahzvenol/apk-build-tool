@@ -4,62 +4,6 @@ import path from 'path'
 import { Dname, Keystore } from './types'
 import { getKeytoolPath, getLibPath } from './path'
 
-export const getKeyProperties = async (projectPath: string): Promise<Keystore | null> => {
-  const keystore: Keystore = {
-    storeFile: '',
-    storePassword: '',
-    keyAlias: '',
-    keyPassword: ''
-  }
-
-  const keyPropertiesPath = path.join(projectPath, 'key.properties')
-
-  try {
-    await fs.access(keyPropertiesPath)
-  } catch (_error) {
-    console.error(`Key properties not found at: ${keyPropertiesPath}`)
-    return keystore
-  }
-
-  const keyPropertiesContent = await fs.readFile(keyPropertiesPath, 'utf8')
-  const keyPropertiesLines = keyPropertiesContent
-    .split('\n')
-    .filter((line) => line.trim().length > 0)
-
-  for (const line of keyPropertiesLines) {
-    const [key, value] = line.split('=')
-    if (key === 'storeFile') {
-      keystore.storeFile = value.trim()
-    }
-    if (key === 'storePassword') {
-      keystore.storePassword = value.trim()
-    }
-    if (key === 'keyAlias') {
-      keystore.keyAlias = value.trim()
-    }
-    if (key === 'keyPassword') {
-      keystore.keyPassword = value.trim()
-    }
-  }
-
-  console.log('Get key properties at: ', keyPropertiesPath)
-
-  return keystore
-}
-
-export const saveKeyProperties = async (projectPath: string, keystore: Keystore): Promise<void> => {
-  try {
-    const keyPropertiesPath = path.join(projectPath, 'key.properties')
-
-    console.log('Saving key properties', keyPropertiesPath)
-
-    const keyPropertiesContent = `storeFile=${keystore.storeFile}\nstorePassword=${keystore.storePassword}\nkeyAlias=${keystore.keyAlias}\nkeyPassword=${keystore.keyPassword}`
-    await fs.writeFile(keyPropertiesPath, keyPropertiesContent, 'utf8')
-  } catch (error) {
-    console.error(`Error saving key properties: ${error}`)
-  }
-}
-
 export const dnameToString = (dname: Dname): string | null => {
   const dnameParts: string[] = []
 
@@ -88,18 +32,9 @@ export const dnameToString = (dname: Dname): string | null => {
 
 export const createKeystore = async (
   keytoolPath: string,
-  keystore: Keystore,
-  overWrite: boolean = false
+  keystore: Keystore
 ): Promise<Keystore | null> => {
-  const hasKeystore = await fs
-    .access(keystore.storeFile)
-    .then(() => true)
-    .catch(() => false)
-
-  if (hasKeystore) {
-    if (!overWrite) return null
-    await fs.rm(keystore.storeFile, { force: true })
-  }
+  await fs.rm(keystore.storeFile, { force: true })
 
   if (!keystore.validity) return null
 
@@ -113,7 +48,7 @@ export const createKeystore = async (
 
   try {
     await executeCommand(
-      keytoolPath ?? 'keytool',
+      keytoolPath,
       [
         '-genkey',
         '-v',

@@ -55,14 +55,13 @@ export interface Translations {
   keystore_info_missing_skip_signing: string
   preparing: string
   apkeditor_not_found: string
-  webgal_template_not_found: string
+  template_apk_not_found: string
   jdk_not_found: string
   build_tools_not_found: string
   cleaning_build_dir: string
   decompiling_template_apk: string
   apk_decompilation_failed: string
   replacing_assets: string
-  copying_engine: string
   copying_game_assets: string
   copying_icons: string
   skip_copying_icons: string
