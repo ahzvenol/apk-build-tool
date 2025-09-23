@@ -1,4 +1,4 @@
-import { BuildOptions, BuildResult, Keystore } from 'src/shared/types/build'
+import { BuildOptions, Keystore } from 'src/shared/types/build'
 
 export const selectFolder = async (): Promise<string | null> => {
   return await window.electron.ipcRenderer.invoke('select-folder')
@@ -19,6 +19,6 @@ export const createKeystore = async (keystore: Keystore): Promise<Keystore | nul
   return await window.electron.ipcRenderer.invoke('create-keystore', keystore)
 }
 
-export const buildApk = async (options: BuildOptions): Promise<BuildResult> => {
+export const buildApk = async (options: BuildOptions): Promise<void> => {
   return await window.electron.ipcRenderer.invoke('build-apk', options)
 }

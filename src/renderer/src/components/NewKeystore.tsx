@@ -7,22 +7,20 @@ import {
   DialogSurface,
   DialogTitle,
   DialogTrigger,
-  Field,
   Text,
   InfoLabel,
   Input
 } from '@fluentui/react-components'
-import { useState, useMemo } from 'react'
-import { createKeystore, selectSaveKeystore } from './invoke'
-import styles from './app.module.css'
+import { useState } from 'react'
+import { createKeystore, selectSaveKeystore } from '../invoke'
+import styles from '../app.module.css'
 import { Keystore, SignConfig } from 'src/shared/types/build'
-import { getTranslations, Language, languages } from '../../shared/locales/i18n'
+import { Translations, Languages } from 'src/shared/locales'
 
 // 定义 Props 接口
 interface NewKeystoreDialogProps {
-  open: boolean
-  setOpen: (isOpen: boolean) => void
   setKeystore: (newKeystore: SignConfig) => void
+  t: Translations[Languages]
 }
 
 // 定义初始空状态
@@ -42,16 +40,9 @@ const emptyKeystore: Keystore = {
   }
 }
 
-export const NewKeystore = ({
-  open,
-  setOpen,
-  setKeystore
-}: NewKeystoreDialogProps): React.JSX.Element => {
-  // 1. [核心] 对话框自己管理内部的表单状态
+export const NewKeystore = ({ setKeystore, t }: NewKeystoreDialogProps): React.JSX.Element => {
+  const [open, setOpen] = useState(false)
   const [newKeystore, setNewKeystore] = useState<Keystore>(emptyKeystore)
-
-  const [language, setLanguage] = useState<Language>(languages.zhCn)
-  const t = useMemo(() => getTranslations(language), [language])
 
   return (
     <Dialog

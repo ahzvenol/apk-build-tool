@@ -1,4 +1,4 @@
-import { Translations } from '../locales/i18n'
+import { Languages, Translations } from '../locales'
 
 export interface AppInfo {
   appName: string
@@ -40,13 +40,6 @@ export interface BuildOptions {
   signConfig?: SignConfig
 }
 
-export interface BuildResult {
-  success: boolean
-  message: string
-  path?: string
-  error?: unknown
-}
-
 export type BuildStage =
   | 'NOT_STARTED'
   | 'INITIALIZING'
@@ -56,7 +49,7 @@ export type BuildStage =
   | 'COMPLETED'
 
 export interface ProgressData {
-  message: keyof Translations
+  message: keyof Translations[Languages]
   stage: BuildStage
   percentage: number
 }

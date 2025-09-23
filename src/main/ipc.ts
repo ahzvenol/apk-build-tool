@@ -1,8 +1,8 @@
 import { shell, BrowserWindow, ipcMain, dialog } from 'electron'
-import { build } from './lib/build'
-import { createKeystore } from './lib/signer'
-import { getKeytoolPath } from './lib/path'
-import { BuildOptions, BuildResult, Keystore, ProgressCallback } from '../shared/types/build'
+import { build } from './scripts/build'
+import { createKeystore } from './scripts/keystore'
+import { getKeytoolPath } from './scripts/path'
+import { BuildOptions, Keystore, ProgressCallback } from '../shared/types/build'
 
 // todo:给出合适的命名，涉及dist至少验证存在index.html
 ipcMain.handle('select-folder', async () => {
@@ -13,15 +13,14 @@ ipcMain.handle('select-folder', async () => {
   return folderPaths ? folderPaths[0] : null
 })
 
-ipcMain.handle('build-apk', async (_event, options: BuildOptions): Promise<BuildResult> => {
+ipcMain.handle('build-apk', async (_event, options: BuildOptions): Promise<void> => {
   const window = BrowserWindow.fromWebContents(_event.sender)
 
   const onProgress: ProgressCallback = (progressData): void => {
     window?.webContents.send('build-progress', progressData)
   }
 
-  const result = await build(options, onProgress)
-  return result
+  await build(options, onProgress)
 })
 
 ipcMain.handle('select-keystore', async () => {

@@ -1,6 +1,4 @@
-import { Translations } from './i18n'
-
-const zhCn: Translations = {
+export const ChineseSimplified = {
   title: 'WebGAL APK 构建工具',
   project_path: '项目路径',
   select: '选择',
@@ -46,12 +44,13 @@ const zhCn: Translations = {
   keystore_info_missing_skip_signing: '未找到签名信息，跳过签名',
   preparing: '正在准备',
   apkeditor_not_found: '未找到 APKEditor',
-  template_apk_not_found: '未找到 WebGAL 模板',
+  template_apk_not_found: '未找到 Apk 模板',
   jdk_not_found: '未找到 JDK',
   build_tools_not_found: '未找到构建工具',
   cleaning_build_dir: '正在清理构建目录',
   decompiling_template_apk: '正在反编译模板 APK',
   apk_decompilation_failed: 'APK 反编译失败',
+  package_directory_not_found: '在反编译的 APK 中找不到包目录',
   replacing_assets: '正在替换资源',
   copying_game_assets: '正在复制游戏资源',
   copying_icons: '正在复制图标',
@@ -66,4 +65,3 @@ const zhCn: Translations = {
   completed: '已完成'
 }
 
-export default zhCn

@@ -1,6 +1,4 @@
-import { Translations } from './i18n'
-
-const en: Translations = {
+export const English = {
   title: 'WebGAL APK Build Tool',
   project_path: 'Project Path',
   select: 'Select',
@@ -46,12 +44,13 @@ const en: Translations = {
   keystore_info_missing_skip_signing: 'Keystore info missing, skip signing',
   preparing: 'Preparing',
   apkeditor_not_found: 'APKEditor not found',
-  template_apk_not_found: 'WebGAL template not found',
+  template_apk_not_found: 'Template apk not found',
   jdk_not_found: 'JDK not found',
   build_tools_not_found: 'Build tools not found',
   cleaning_build_dir: 'Cleaning build directory',
   decompiling_template_apk: 'Decompiling template APK',
   apk_decompilation_failed: 'APK decompilation failed',
+  package_directory_not_found: 'Could not find package directory in decompiled APK',
   replacing_assets: 'Replacing assets',
   copying_game_assets: 'Copying game assets',
   copying_icons: 'Copying icons',
@@ -66,5 +65,3 @@ const en: Translations = {
     'APK signing failed, please check if the signing information is correct.',
   completed: 'Completed'
 }
-
-export default en

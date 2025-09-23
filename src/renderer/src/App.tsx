@@ -17,17 +17,11 @@ import {
 } from '@fluentui/react-components'
 import { bundleIcon, LocalLanguageFilled, LocalLanguageRegular } from '@fluentui/react-icons'
 import { version } from '~build/package'
-import {
-  BuildResult,
-  ProgressData,
-  AppInfo,
-  SignConfig,
-  BuildOptions
-} from 'src/shared/types/build'
+import { ProgressData, AppInfo, SignConfig, BuildOptions } from 'src/shared/types/build'
 import useLocalStorage from './hooks/useLocalStorage'
 import { buildApk, openOutputFolder, selectFolder, selectKeystore } from './invoke'
-import { getTranslations, Language, languages } from '../../shared/locales/i18n'
-import { NewKeystore } from './NewKeystore'
+import { descriptions, Languages, translations } from '../../shared/locales'
+import { NewKeystore } from './components/NewKeystore'
 
 const LocalLanguageIcon = bundleIcon(LocalLanguageFilled, LocalLanguageRegular)
 
@@ -51,11 +45,10 @@ const App = (): React.JSX.Element => {
   const [signConfig, setSignConfig] = useLocalStorage<SignConfig>('signConfig', initialSignConfig)
 
   const [progress, setProgress] = useState<ProgressData | null>(null)
-  const [buildResult, setBuildResult] = useState<BuildResult | null>(null)
-  const [open, setOpen] = useState(false)
 
-  const [language, setLanguage] = useLocalStorage<Language>('language', languages.zhCn)
-  const t = useMemo(() => getTranslations(language), [language])
+  const [language, setLanguage] = useLocalStorage<Languages>('language', 'zh-CN')
+  console.log(language)
+  const t = useMemo(() => translations[language], [language])
 
   const isValidPackageName = (packageName: string): boolean => {
     const regex = /^(?=[a-z])(?=.*\.)[a-z0-9_.]*[a-z0-9]$/
@@ -63,16 +56,13 @@ const App = (): React.JSX.Element => {
   }
 
   const build = async (): Promise<void> => {
-    setBuildResult(null)
     const options: BuildOptions = {
       distPath: distPath!,
       appInfo: appInfo,
       signConfig: signConfig
       // outputPath: distPath!
     }
-    const result = await buildApk(options)
-    console.log(result)
-    setBuildResult(result)
+    await buildApk(options)
     openOutputFolder(distPath!)
   }
 
@@ -136,25 +126,21 @@ const App = (): React.JSX.Element => {
             <Menu positioning={{ autoSize: true }}>
               <MenuTrigger disableButtonEnhancement>
                 <Button icon={<LocalLanguageIcon />} appearance="subtle" style={{ minWidth: '0' }}>
-                  {language.name}
+                  {descriptions[language]}
                 </Button>
               </MenuTrigger>
               <MenuPopover>
                 <MenuList>
-                  <MenuItem
-                    onClick={() => {
-                      setLanguage(languages.zhCn)
-                    }}
-                  >
-                    简体中文
-                  </MenuItem>
-                  <MenuItem
-                    onClick={() => {
-                      setLanguage(languages.en)
-                    }}
-                  >
-                    English
-                  </MenuItem>
+                  {Object.keys(descriptions).map((description) => (
+                    <MenuItem
+                      key={description}
+                      onClick={() => {
+                        setLanguage(description as Languages)
+                      }}
+                    >
+                      {description}
+                    </MenuItem>
+                  ))}
                 </MenuList>
               </MenuPopover>
             </Menu>
@@ -175,7 +161,6 @@ const App = (): React.JSX.Element => {
               const result = await selectFolder()
               if (!result) return
               setDistPath(result)
-              setBuildResult(null)
               setProgress(null)
             }}
           >
@@ -259,7 +244,7 @@ const App = (): React.JSX.Element => {
               }}
             />
 
-            <NewKeystore open={open} setOpen={setOpen} setKeystore={setSignConfig}></NewKeystore>
+            <NewKeystore setKeystore={setSignConfig} t={t} />
 
             <Button
               appearance="primary"
@@ -350,7 +335,9 @@ const App = (): React.JSX.Element => {
           </div>
 
           <Field
-            validationMessage={`${progress?.message ? t[progress.message] : ''} ${buildResult?.path ? `- ${t.saved_to} ${buildResult.path} ` : ''}`}
+            //   validationMessage={`${progress?.message ? t[progress.message] : ''} ${buildResult?.path ? `- ${t.saved_to} ${buildResult.path} ` : ''}`
+            // }
+            validationMessage={`${progress?.message ? t[progress.message] : ''}`}
             validationState={
               progress?.stage === 'ERROR'
                 ? 'error'
