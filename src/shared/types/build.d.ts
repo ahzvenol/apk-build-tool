@@ -7,7 +7,6 @@ export interface AppInfo {
   versionCode: number
 }
 
-// todo:有两个不同用途的Keystore
 export interface SignConfig {
   storeFile: string
   storePassword: string
@@ -20,8 +19,17 @@ export interface Keystore {
   storePassword: string
   keyAlias: string
   keyPassword: string
-  validity?: number
-  dname?: Dname
+  validity: number
+  dname: Dname
+}
+
+export interface Dname {
+  firstAndLastName?: string
+  organizationalUnit?: string
+  organization?: string
+  cityOrLocality?: string
+  stateOrProvince?: string
+  countryCode?: string
 }
 
 export interface BuildOptions {
@@ -54,12 +62,3 @@ export interface ProgressData {
 }
 
 export type ProgressCallback = (progressData: ProgressData) => void
-
-export interface Dname {
-  firstAndLastName?: string
-  organizationalUnit?: string
-  organization?: string
-  cityOrLocality?: string
-  stateOrProvince?: string
-  countryCode?: string
-}

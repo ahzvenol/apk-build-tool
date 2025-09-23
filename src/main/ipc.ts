@@ -1,8 +1,8 @@
 import { shell, BrowserWindow, ipcMain, dialog } from 'electron'
-import { build } from '../lib/build'
-import { createKeystore } from '../lib/signer'
-import { getKeytoolPath } from '../lib/path'
-import { BuildOptions, BuildResult, Keystore, ProgressCallback } from '../lib/types'
+import { build } from './lib/build'
+import { createKeystore } from './lib/signer'
+import { getKeytoolPath } from './lib/path'
+import { BuildOptions, BuildResult, Keystore, ProgressCallback } from '../shared/types/build'
 
 // todo:给出合适的命名，涉及dist至少验证存在index.html
 ipcMain.handle('select-folder', async () => {

@@ -17,10 +17,16 @@ import {
 } from '@fluentui/react-components'
 import { bundleIcon, LocalLanguageFilled, LocalLanguageRegular } from '@fluentui/react-icons'
 import { version } from '~build/package'
-import { BuildResult, ProgressData, AppInfo, SignConfig, BuildOptions } from 'src/lib/types'
+import {
+  BuildResult,
+  ProgressData,
+  AppInfo,
+  SignConfig,
+  BuildOptions
+} from 'src/shared/types/build'
 import useLocalStorage from './hooks/useLocalStorage'
 import { buildApk, openOutputFolder, selectFolder, selectKeystore } from './invoke'
-import { getTranslations, Language, languages } from '../../locales/i18n'
+import { getTranslations, Language, languages } from '../../shared/locales/i18n'
 import { NewKeystore } from './NewKeystore'
 
 const LocalLanguageIcon = bundleIcon(LocalLanguageFilled, LocalLanguageRegular)
@@ -61,7 +67,7 @@ const App = (): React.JSX.Element => {
     const options: BuildOptions = {
       distPath: distPath!,
       appInfo: appInfo,
-      signConfig: signConfig!
+      signConfig: signConfig
       // outputPath: distPath!
     }
     const result = await buildApk(options)
@@ -176,144 +182,140 @@ const App = (): React.JSX.Element => {
             {t.select}
           </Button>
         </div>
-        {distPath && appInfo && (
-          <>
-            <Text>{t.app_name}</Text>
-            <div className={styles.inputContainer}>
-              <Input
-                type="text"
-                style={{ flex: 1 }}
-                value={appInfo.appName}
-                onChange={(_ev, data) => {
-                  const newProjectInfo = { ...appInfo, appName: data.value }
-                  setAppInfo(newProjectInfo)
-                }}
-              />
-            </div>
+        <>
+          <Text>{t.app_name}</Text>
+          <div className={styles.inputContainer}>
+            <Input
+              type="text"
+              style={{ flex: 1 }}
+              value={appInfo.appName}
+              onChange={(_ev, data) => {
+                const newProjectInfo = { ...appInfo, appName: data.value }
+                setAppInfo(newProjectInfo)
+              }}
+            />
+          </div>
 
-            <Text>
-              {t.package_name}
-              <InfoLabel info={t.package_name_info} />
-            </Text>
-            <div className={styles.inputContainer}>
-              <Input
-                spellCheck={false}
-                type="text"
-                style={{ flex: 1 }}
-                value={appInfo.packageName}
-                onChange={(_ev, data) => {
-                  const newProjectInfo = { ...appInfo, packageName: data.value }
-                  setAppInfo(newProjectInfo)
-                }}
-              />
-            </div>
+          <Text>
+            {t.package_name}
+            <InfoLabel info={t.package_name_info} />
+          </Text>
+          <div className={styles.inputContainer}>
+            <Input
+              spellCheck={false}
+              type="text"
+              style={{ flex: 1 }}
+              value={appInfo.packageName}
+              onChange={(_ev, data) => {
+                const newProjectInfo = { ...appInfo, packageName: data.value }
+                setAppInfo(newProjectInfo)
+              }}
+            />
+          </div>
 
-            <Text>{t.version_name}</Text>
-            <div className={styles.inputContainer}>
-              <Input
-                type="text"
-                style={{ flex: 1 }}
-                value={appInfo.versionName}
-                onChange={(_ev, data) => {
-                  const newProjectInfo = { ...appInfo, versionName: data.value }
-                  setAppInfo(newProjectInfo)
-                }}
-              />
-            </div>
+          <Text>{t.version_name}</Text>
+          <div className={styles.inputContainer}>
+            <Input
+              type="text"
+              style={{ flex: 1 }}
+              value={appInfo.versionName}
+              onChange={(_ev, data) => {
+                const newProjectInfo = { ...appInfo, versionName: data.value }
+                setAppInfo(newProjectInfo)
+              }}
+            />
+          </div>
 
-            <Text>
-              {t.version_code}
-              <InfoLabel info={t.version_code_info} />
-            </Text>
-            <div className={styles.inputContainer}>
-              <Input
-                type="number"
-                step={1}
-                min={1}
-                style={{ flex: 1 }}
-                value={appInfo.versionCode.toString()}
-                onChange={(_ev, data) => {
-                  const newProjectInfo = {
-                    ...appInfo,
-                    versionCode: Number(data.value) || 1
-                  }
-                  setAppInfo(newProjectInfo)
-                }}
-              />
-            </div>
-          </>
-        )}
-        {signConfig && appInfo && (
-          <>
-            <Text>{t.keystore_file_path}</Text>
-            <div className={styles.inputContainer}>
-              <Input
-                type="text"
-                style={{ flex: 1 }}
-                value={signConfig.storeFile}
-                onChange={(_ev, data) => {
-                  setSignConfig({ ...signConfig, storeFile: data.value })
-                }}
-              />
+          <Text>
+            {t.version_code}
+            <InfoLabel info={t.version_code_info} />
+          </Text>
+          <div className={styles.inputContainer}>
+            <Input
+              type="number"
+              step={1}
+              min={1}
+              style={{ flex: 1 }}
+              value={appInfo.versionCode.toString()}
+              onChange={(_ev, data) => {
+                const newProjectInfo = {
+                  ...appInfo,
+                  versionCode: Number(data.value) || 1
+                }
+                setAppInfo(newProjectInfo)
+              }}
+            />
+          </div>
+        </>
+        <>
+          <Text>{t.keystore_file_path}</Text>
+          <div className={styles.inputContainer}>
+            <Input
+              type="text"
+              style={{ flex: 1 }}
+              value={signConfig.storeFile}
+              onChange={(_ev, data) => {
+                setSignConfig({ ...signConfig, storeFile: data.value })
+              }}
+            />
 
-              <NewKeystore open={open} setOpen={setOpen} setKeystore={setSignConfig}></NewKeystore>
+            <NewKeystore open={open} setOpen={setOpen} setKeystore={setSignConfig}></NewKeystore>
 
-              <Button
-                appearance="primary"
-                style={{ minWidth: '0' }}
-                onClick={async () => {
-                  const result = await selectKeystore()
-                  if (!result) return
-                  setSignConfig({ ...signConfig, storeFile: result })
-                }}
-              >
-                {t.select}
-              </Button>
-            </div>
+            <Button
+              appearance="primary"
+              style={{ minWidth: '0' }}
+              onClick={async () => {
+                const result = await selectKeystore()
+                if (!result) return
+                setSignConfig({ ...signConfig, storeFile: result })
+              }}
+            >
+              {t.select}
+            </Button>
+          </div>
 
-            <Text>
-              {t.keystore_password} <InfoLabel info={t.keystore_password_info} />
-            </Text>
-            <div className={styles.inputContainer}>
-              <Input
-                type="password"
-                style={{ flex: 1 }}
-                value={signConfig.storePassword}
-                onChange={(_ev, data) => {
-                  setSignConfig({ ...signConfig, storePassword: data.value })
-                }}
-              />
-            </div>
+          <Text>
+            {t.keystore_password} <InfoLabel info={t.keystore_password_info} />
+          </Text>
+          <div className={styles.inputContainer}>
+            <Input
+              type="password"
+              style={{ flex: 1 }}
+              value={signConfig.storePassword}
+              onChange={(_ev, data) => {
+                setSignConfig({ ...signConfig, storePassword: data.value })
+              }}
+            />
+          </div>
 
-            <Text>
-              {t.key_alias} <span style={{ color: 'red' }}>*</span>
-            </Text>
-            <div className={styles.inputContainer}>
-              <Input
-                type="text"
-                style={{ flex: 1 }}
-                value={signConfig.keyAlias}
-                onChange={(_ev, data) => {
-                  setSignConfig({ ...signConfig, keyAlias: data.value })
-                }}
-              />
-            </div>
+          <Text>
+            {t.key_alias} <span style={{ color: 'red' }}>*</span>
+          </Text>
+          <div className={styles.inputContainer}>
+            <Input
+              type="text"
+              style={{ flex: 1 }}
+              value={signConfig.keyAlias}
+              onChange={(_ev, data) => {
+                setSignConfig({ ...signConfig, keyAlias: data.value })
+              }}
+            />
+          </div>
 
-            <Text>
-              {t.key_password} <InfoLabel info={t.keystore_password_info} />
-            </Text>
-            <div className={styles.inputContainer}>
-              <Input
-                type="password"
-                style={{ flex: 1 }}
-                value={signConfig.keyPassword}
-                onChange={(_ev, data) => {
-                  setSignConfig({ ...signConfig, keyPassword: data.value })
-                }}
-              />
-            </div>
-          </>
-        )}
+          <Text>
+            {t.key_password} <InfoLabel info={t.keystore_password_info} />
+          </Text>
+          <div className={styles.inputContainer}>
+            <Input
+              type="password"
+              style={{ flex: 1 }}
+              value={signConfig.keyPassword}
+              onChange={(_ev, data) => {
+                setSignConfig({ ...signConfig, keyPassword: data.value })
+              }}
+            />
+          </div>
+        </>
       </div>
 
       {distPath && appInfo && (

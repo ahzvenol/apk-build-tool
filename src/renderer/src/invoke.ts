@@ -1,4 +1,4 @@
-import { BuildOptions, BuildResult, Keystore } from 'src/lib/types'
+import { BuildOptions, BuildResult, Keystore } from 'src/shared/types/build'
 
 export const selectFolder = async (): Promise<string | null> => {
   return await window.electron.ipcRenderer.invoke('select-folder')

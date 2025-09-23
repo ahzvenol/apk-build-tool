@@ -15,8 +15,8 @@ import {
 import { useState, useMemo } from 'react'
 import { createKeystore, selectSaveKeystore } from './invoke'
 import styles from './app.module.css'
-import { Keystore, SignConfig } from 'src/lib/types'
-import { getTranslations, Language, languages } from '../../locales/i18n'
+import { Keystore, SignConfig } from 'src/shared/types/build'
+import { getTranslations, Language, languages } from '../../shared/locales/i18n'
 
 // 定义 Props 接口
 interface NewKeystoreDialogProps {
