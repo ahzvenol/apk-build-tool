@@ -1,6 +1,6 @@
 import { resolve } from 'path'
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
-import react from '@vitejs/plugin-react'
+import preact from '@preact/preset-vite'
 import Info from 'unplugin-info/vite'
 
 export default defineConfig({
@@ -16,6 +16,6 @@ export default defineConfig({
         '@renderer': resolve('src/renderer/src')
       }
     },
-    plugins: [react(), Info()]
+    plugins: [preact(), Info()]
   }
 })

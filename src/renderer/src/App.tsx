@@ -1,4 +1,3 @@
-import { useEffect, useMemo, useState } from 'react'
 import styles from './app.module.css'
 import {
   Button,
@@ -18,10 +17,11 @@ import {
 import { bundleIcon, LocalLanguageFilled, LocalLanguageRegular } from '@fluentui/react-icons'
 import { version } from '~build/package'
 import { ProgressData, AppInfo, SignConfig, BuildOptions } from 'src/shared/types/build'
-import useLocalStorage from './hooks/useLocalStorage'
 import { buildApk, openOutputFolder, selectFolder, selectKeystore } from './invoke'
-import { descriptions, Languages, translations } from '../../shared/locales'
+import { descriptions, Languages } from '../../shared/locales'
 import { NewKeystore } from './components/NewKeystore'
+import { useReactiveWrapper} from 'micro-reactive-wrapper'
+import { t, language } from './translation'
 
 const LocalLanguageIcon = bundleIcon(LocalLanguageFilled, LocalLanguageRegular)
 
@@ -39,16 +39,17 @@ const initialSignConfig: SignConfig = {
   keyPassword: ''
 }
 
-const App = (): React.JSX.Element => {
-  const [distPath, setDistPath] = useState<string | null>(null)
-  const [appInfo, setAppInfo] = useLocalStorage<AppInfo>('appInfo', initialAppInfo)
-  const [signConfig, setSignConfig] = useLocalStorage<SignConfig>('signConfig', initialSignConfig)
+const distPath = useReactive<string | null>(null)
+const appInfo = useReactive<AppInfo>(initialAppInfo)
+const signConfig = useReactive<SignConfig>(initialSignConfig)
 
-  const [progress, setProgress] = useState<ProgressData | null>(null)
+const progress = useReactive<ProgressData | null>(null)
 
-  const [language, setLanguage] = useLocalStorage<Languages>('language', 'zh-CN')
-  console.log(language)
-  const t = useMemo(() => translations[language], [language])
+const App = (): JSX.Element => {
+  window.electron.ipcRenderer.on('build-progress', (_event, progressData) => {
+    console.log('Build Progress:', progressData)
+    progress(progressData)
+  })
 
   const isValidPackageName = (packageName: string): boolean => {
     const regex = /^(?=[a-z])(?=.*\.)[a-z0-9_.]*[a-z0-9]$/
@@ -57,49 +58,35 @@ const App = (): React.JSX.Element => {
 
   const build = async (): Promise<void> => {
     const options: BuildOptions = {
-      distPath: distPath!,
-      appInfo: appInfo,
-      signConfig: signConfig
+      distPath: distPath()!,
+      appInfo: appInfo(),
+      signConfig: signConfig()
       // outputPath: distPath!
     }
     await buildApk(options)
-    openOutputFolder(distPath!)
+    openOutputFolder(distPath()!)
   }
 
-  const disableBuild = useMemo(
-    () =>
-      !distPath ||
-      distPath.length === 0 ||
-      !appInfo ||
-      appInfo.appName.length === 0 ||
-      appInfo.packageName.length === 0 ||
-      !isValidPackageName(appInfo.packageName) ||
-      appInfo.versionName.length === 0 ||
-      appInfo.versionCode === 0 ||
-      !signConfig ||
-      signConfig.storeFile.length === 0 ||
-      signConfig.storePassword.length < 6 ||
-      signConfig.keyAlias.length === 0 ||
-      signConfig.keyPassword.length < 6 ||
-      progress?.stage === 'RUNNING' ||
-      progress?.stage === 'INITIALIZING',
-    [distPath, appInfo, signConfig, progress]
-  )
+  const disableBuild = (): boolean =>
+    !distPath() ||
+    distPath()!.length === 0 ||
+    !appInfo() ||
+    appInfo().appName.length === 0 ||
+    appInfo().packageName.length === 0 ||
+    !isValidPackageName(appInfo().packageName) ||
+    appInfo().versionName.length === 0 ||
+    appInfo().versionCode === 0 ||
+    !signConfig() ||
+    signConfig().storeFile.length === 0 ||
+    signConfig().storePassword.length < 6 ||
+    signConfig().keyAlias.length === 0 ||
+    signConfig().keyPassword.length < 6 ||
+    progress()?.stage === 'RUNNING' ||
+    progress()?.stage === 'INITIALIZING'
 
-  useEffect(() => {
-    window.electron.ipcRenderer.on('build-progress', (_event, progressData) => {
-      console.log('Build Progress:', progressData)
-      setProgress(progressData)
-    })
-  }, [])
-
-  useEffect(() => {
-    document.title = `${t.title} ${version}`
-  }, [t])
-
-  return (
+  return useObserver(() => (
     <div className={styles.app}>
-      <div className={styles.container}>
+      <div className={styles.main}>
         <div
           style={{
             display: 'flex',
@@ -110,7 +97,7 @@ const App = (): React.JSX.Element => {
           }}
         >
           <Title3>
-            {t.title} {version}
+            {t.title()} {version}
           </Title3>
           <div
             style={{ display: 'flex', flexDirection: 'row', gap: '0.5rem', alignItems: 'center' }}
@@ -126,7 +113,7 @@ const App = (): React.JSX.Element => {
             <Menu positioning={{ autoSize: true }}>
               <MenuTrigger disableButtonEnhancement>
                 <Button icon={<LocalLanguageIcon />} appearance="subtle" style={{ minWidth: '0' }}>
-                  {descriptions[language]}
+                  {descriptions[language()]}
                 </Button>
               </MenuTrigger>
               <MenuPopover>
@@ -135,7 +122,7 @@ const App = (): React.JSX.Element => {
                     <MenuItem
                       key={description}
                       onClick={() => {
-                        setLanguage(description as Languages)
+                        language(description as Languages)
                       }}
                     >
                       {description}
@@ -146,12 +133,12 @@ const App = (): React.JSX.Element => {
             </Menu>
           </div>
         </div>
-        <Text>{t.project_path}</Text>
-        <div className={styles.inputContainer}>
+        <Text>{t.project_path()}</Text>
+        <div className={styles.input}>
           <Input
             style={{ flex: 1 }}
-            value={distPath || ''}
-            onChange={(_ev, data) => setDistPath(data.value)}
+            value={distPath() || ''}
+            onChange={(_ev, data) => distPath(data.value)}
           />
 
           <Button
@@ -160,91 +147,85 @@ const App = (): React.JSX.Element => {
             onClick={async () => {
               const result = await selectFolder()
               if (!result) return
-              setDistPath(result)
-              setProgress(null)
+              distPath(result)
+              console.log(distPath())
+              progress(null)
             }}
           >
-            {t.select}
+            {t.select()}
           </Button>
         </div>
         <>
-          <Text>{t.app_name}</Text>
-          <div className={styles.inputContainer}>
+          <Text>{t.app_name()}</Text>
+          <div className={styles.input}>
             <Input
               type="text"
               style={{ flex: 1 }}
-              value={appInfo.appName}
+              value={appInfo.appName()}
               onChange={(_ev, data) => {
-                const newProjectInfo = { ...appInfo, appName: data.value }
-                setAppInfo(newProjectInfo)
+                appInfo.appName(data.value)
               }}
             />
           </div>
 
           <Text>
-            {t.package_name}
-            <InfoLabel info={t.package_name_info} />
+            {t.package_name()}
+            <InfoLabel info={t.package_name_info()} />
           </Text>
-          <div className={styles.inputContainer}>
+          <div className={styles.input}>
             <Input
               spellCheck={false}
               type="text"
               style={{ flex: 1 }}
-              value={appInfo.packageName}
+              value={appInfo.packageName()}
               onChange={(_ev, data) => {
-                const newProjectInfo = { ...appInfo, packageName: data.value }
-                setAppInfo(newProjectInfo)
+                appInfo.packageName(data.value)
               }}
             />
           </div>
 
-          <Text>{t.version_name}</Text>
-          <div className={styles.inputContainer}>
+          <Text>{t.version_name()}</Text>
+          <div className={styles.input}>
             <Input
               type="text"
               style={{ flex: 1 }}
-              value={appInfo.versionName}
+              value={appInfo.versionName()}
               onChange={(_ev, data) => {
-                const newProjectInfo = { ...appInfo, versionName: data.value }
-                setAppInfo(newProjectInfo)
+                appInfo.versionName(data.value)
               }}
             />
           </div>
 
           <Text>
-            {t.version_code}
-            <InfoLabel info={t.version_code_info} />
+            {t.version_code()}
+            <InfoLabel info={t.version_code_info()} />
           </Text>
-          <div className={styles.inputContainer}>
+          <div className={styles.input}>
             <Input
               type="number"
               step={1}
               min={1}
               style={{ flex: 1 }}
-              value={appInfo.versionCode.toString()}
+              value={appInfo.versionCode().toString()}
               onChange={(_ev, data) => {
-                const newProjectInfo = {
-                  ...appInfo,
-                  versionCode: Number(data.value) || 1
-                }
-                setAppInfo(newProjectInfo)
+                appInfo.versionCode(Number(data.value) || 1)
               }}
             />
           </div>
         </>
         <>
-          <Text>{t.keystore_file_path}</Text>
-          <div className={styles.inputContainer}>
+          <Text>{t.keystore_file_path()}</Text>
+          <div className={styles.input}>
             <Input
               type="text"
               style={{ flex: 1 }}
-              value={signConfig.storeFile}
+              value={signConfig.storeFile()}
               onChange={(_ev, data) => {
-                setSignConfig({ ...signConfig, storeFile: data.value })
+                signConfig.storeFile(data.value)
               }}
             />
 
-            <NewKeystore setKeystore={setSignConfig} t={t} />
+            <NewKeystore setKeystore={signConfig} />
 
             <Button
               appearance="primary"
@@ -252,58 +233,58 @@ const App = (): React.JSX.Element => {
               onClick={async () => {
                 const result = await selectKeystore()
                 if (!result) return
-                setSignConfig({ ...signConfig, storeFile: result })
+                signConfig.storeFile(result)
               }}
             >
-              {t.select}
+              {t.select()}
             </Button>
           </div>
 
           <Text>
-            {t.keystore_password} <InfoLabel info={t.keystore_password_info} />
+            {t.keystore_password()} <InfoLabel info={t.keystore_password_info()} />
           </Text>
-          <div className={styles.inputContainer}>
+          <div className={styles.input}>
             <Input
               type="password"
               style={{ flex: 1 }}
-              value={signConfig.storePassword}
+              value={signConfig.storePassword()}
               onChange={(_ev, data) => {
-                setSignConfig({ ...signConfig, storePassword: data.value })
+                signConfig.storePassword(data.value)
               }}
             />
           </div>
 
           <Text>
-            {t.key_alias} <span style={{ color: 'red' }}>*</span>
+            {t.key_alias()} <span style={{ color: 'red' }}>*</span>
           </Text>
-          <div className={styles.inputContainer}>
+          <div className={styles.input}>
             <Input
               type="text"
               style={{ flex: 1 }}
-              value={signConfig.keyAlias}
+              value={signConfig.keyAlias()}
               onChange={(_ev, data) => {
-                setSignConfig({ ...signConfig, keyAlias: data.value })
+                signConfig.keyAlias(data.value)
               }}
             />
           </div>
 
           <Text>
-            {t.key_password} <InfoLabel info={t.keystore_password_info} />
+            {t.key_password()} <InfoLabel info={t.keystore_password_info()} />
           </Text>
-          <div className={styles.inputContainer}>
+          <div className={styles.input}>
             <Input
               type="password"
               style={{ flex: 1 }}
-              value={signConfig.keyPassword}
+              value={signConfig.keyPassword()}
               onChange={(_ev, data) => {
-                setSignConfig({ ...signConfig, keyPassword: data.value })
+                signConfig.keyPassword(data.value)
               }}
             />
           </div>
         </>
       </div>
 
-      {distPath && appInfo && (
+      {distPath() && appInfo() && (
         <div
           style={{
             backgroundColor: '#f0f0f0',
@@ -319,39 +300,37 @@ const App = (): React.JSX.Element => {
               appearance="primary"
               onClick={build}
               style={{ width: '100%' }}
-              disabled={disableBuild}
+              disabled={disableBuild()}
             >
-              {t.build_apk}
+              {t.build_apk()}
             </Button>
-            {progress && (
+            {progress() && (
               <Button
                 appearance="primary"
                 style={{ width: '100%' }}
-                onClick={() => openOutputFolder(distPath)}
+                onClick={() => openOutputFolder(distPath()!)}
               >
-                {t.open_output_folder}
+                {t.open_output_folder()}
               </Button>
             )}
           </div>
 
           <Field
-            //   validationMessage={`${progress?.message ? t[progress.message] : ''} ${buildResult?.path ? `- ${t.saved_to} ${buildResult.path} ` : ''}`
-            // }
-            validationMessage={`${progress?.message ? t[progress.message] : ''}`}
+            validationMessage={`${progress()?.message ? t()[progress()!.message] : ''}`}
             validationState={
-              progress?.stage === 'ERROR'
+              progress()?.stage === 'ERROR'
                 ? 'error'
-                : progress?.stage === 'COMPLETED'
+                : progress()?.stage === 'COMPLETED'
                   ? 'success'
                   : 'none'
             }
           >
             <ProgressBar
-              value={(progress?.percentage ?? 0) / 100}
+              value={(progress()?.percentage ?? 0) / 100}
               color={
-                progress?.stage === 'ERROR'
+                progress()?.stage === 'ERROR'
                   ? 'error'
-                  : progress?.stage === 'COMPLETED'
+                  : progress()?.stage === 'COMPLETED'
                     ? 'success'
                     : 'brand'
               }
@@ -360,7 +339,7 @@ const App = (): React.JSX.Element => {
         </div>
       )}
     </div>
-  )
+  ))
 }
 
 export default App
