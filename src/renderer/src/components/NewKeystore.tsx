@@ -10,14 +10,13 @@ import {
   Text,
   InfoLabel,
   Input,
-  Field
 } from '@fluentui/react-components'
 import { createKeystore, selectSaveKeystore } from '../invoke'
 import styles from '../app.module.css'
 import { Keystore, SignConfig } from 'src/shared/types/build' // 使用新的类型
-import { useReactive } from 'micro-reactive-solid'
-import { useObserver } from 'react-solid-state'
 import { t } from '@renderer/translation'
+import { deepSignal } from 'deepsignal'
+import { Reactive, useReactiveWrapper } from 'micro-reactive-wrapper'
 
 // 定义 Props 接口
 interface NewKeystoreDialogProps {
@@ -41,9 +40,9 @@ const emptyKeystore: Keystore = {
     countryCode: ''
   }
 }
-
-const open = useReactive(false)
+const useReactive: <T>(value: T) => Reactive<T> = useReactiveWrapper(deepSignal)
 export const NewKeystore = ({ setKeystore }: NewKeystoreDialogProps): React.JSX.Element => {
+  const open = useReactive(false)
   const newKeystore = useReactive<Keystore>(JSON.parse(JSON.stringify(emptyKeystore))) // 使用深拷贝确保初始值独立
 
   const isCreateDisabled = (): boolean =>
@@ -62,7 +61,7 @@ export const NewKeystore = ({ setKeystore }: NewKeystoreDialogProps): React.JSX.
     }
   }
 
-  return useObserver(() => (
+  return (
     <Dialog
       open={open()}
       onOpenChange={(_event, data) => {
@@ -228,5 +227,5 @@ export const NewKeystore = ({ setKeystore }: NewKeystoreDialogProps): React.JSX.
         </DialogBody>
       </DialogSurface>
     </Dialog>
-  ))
+  )
 }

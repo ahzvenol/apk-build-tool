@@ -1,15 +1,17 @@
 import { version } from '~build/package'
 import { Languages, translations } from '../../shared/locales'
-import { useReactive } from 'micro-reactive-solid'
-import { createEffect } from 'solid-js'
+import { effect } from '@preact/signals'
+import { deepSignal } from 'deepsignal'
+import { Reactive, useReactiveWrapper } from 'micro-reactive-wrapper'
 
+const useReactive: <T>(value: T) => Reactive<T> = useReactiveWrapper(deepSignal)
 export const t = useReactive(translations['zh-CN'])
 export const language = useReactive<Languages>('zh-CN')
 
-createEffect(() => {
+effect(() => {
   t(translations[language()])
 })
 
-createEffect(() => {
+effect(() => {
   document.title = `${t.title()} ${version}`
 })

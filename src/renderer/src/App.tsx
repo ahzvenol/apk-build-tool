@@ -20,8 +20,9 @@ import { ProgressData, AppInfo, SignConfig, BuildOptions } from 'src/shared/type
 import { buildApk, openOutputFolder, selectFolder, selectKeystore } from './invoke'
 import { descriptions, Languages } from '../../shared/locales'
 import { NewKeystore } from './components/NewKeystore'
-import { useReactiveWrapper} from 'micro-reactive-wrapper'
+import { Reactive, useReactiveWrapper } from 'micro-reactive-wrapper'
 import { t, language } from './translation'
+import { deepSignal } from 'deepsignal'
 
 const LocalLanguageIcon = bundleIcon(LocalLanguageFilled, LocalLanguageRegular)
 
@@ -38,7 +39,7 @@ const initialSignConfig: SignConfig = {
   keyAlias: '',
   keyPassword: ''
 }
-
+const useReactive: <T>(value: T) => Reactive<T> = useReactiveWrapper(deepSignal)
 const distPath = useReactive<string | null>(null)
 const appInfo = useReactive<AppInfo>(initialAppInfo)
 const signConfig = useReactive<SignConfig>(initialSignConfig)
@@ -84,7 +85,7 @@ const App = (): JSX.Element => {
     progress()?.stage === 'RUNNING' ||
     progress()?.stage === 'INITIALIZING'
 
-  return useObserver(() => (
+  return (
     <div className={styles.app}>
       <div className={styles.main}>
         <div
@@ -339,7 +340,7 @@ const App = (): JSX.Element => {
         </div>
       )}
     </div>
-  ))
+  )
 }
 
 export default App
