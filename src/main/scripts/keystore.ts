@@ -3,29 +3,18 @@ import { executeCommand } from './exec'
 import { Dname, Keystore } from '../../shared/types/build'
 
 const dnameToString = (dname: Dname): string | null => {
-  const dnameParts: string[] = []
+  const parts: string[] = []
 
-  if (dname.firstAndLastName?.length === 0) return null
+  if (!dname.firstAndLastName?.length) return null
 
-  if (dname.firstAndLastName && dname.firstAndLastName.length > 0) {
-    dnameParts.push(`CN=${dname.firstAndLastName}`)
-  }
-  if (dname.organizationalUnit && dname.organizationalUnit.length > 0) {
-    dnameParts.push(`OU=${dname.organizationalUnit}`)
-  }
-  if (dname.organization && dname.organization.length > 0) {
-    dnameParts.push(`O=${dname.organization}`)
-  }
-  if (dname.cityOrLocality && dname.cityOrLocality.length > 0) {
-    dnameParts.push(`L=${dname.cityOrLocality}`)
-  }
-  if (dname.stateOrProvince && dname.stateOrProvince.length > 0) {
-    dnameParts.push(`ST=${dname.stateOrProvince}`)
-  }
-  if (dname.countryCode && dname.countryCode.length > 0) {
-    dnameParts.push(`C=${dname.countryCode}`)
-  }
-  return dnameParts.join(',')
+  parts.push(`CN=${dname.firstAndLastName}`)
+  if (dname.organizationalUnit?.length) parts.push(`OU=${dname.organizationalUnit}`)
+  if (dname.organization?.length) parts.push(`O=${dname.organization}`)
+  if (dname.cityOrLocality?.length) parts.push(`L=${dname.cityOrLocality}`)
+  if (dname.stateOrProvince?.length) parts.push(`ST=${dname.stateOrProvince}`)
+  if (dname.countryCode?.length) parts.push(`C=${dname.countryCode}`)
+
+  return parts.join(',')
 }
 
 export const createKeystore = async (
