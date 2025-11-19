@@ -46,7 +46,7 @@ export const ChineseSimplified = {
   apkeditor_not_found: '未找到 APKEditor',
   template_apk_not_found: '未找到 Apk 模板',
   jdk_not_found: '未找到 JDK',
-  build_tools_not_found: '未找到构建工具',
+  uber_apk_signer_not_found: '未找到 APK 签名工具',
   cleaning_build_dir: '正在清理构建目录',
   decompiling_template_apk: '正在反编译模板 APK',
   apk_decompilation_failed: 'APK 反编译失败',

@@ -3,13 +3,7 @@ import path from 'path'
 import { replaceTextInFolder } from './files'
 import { executeCommand } from './exec'
 import { BuildOptions, ProgressCallback } from '../../shared/types/build'
-import {
-  getApkEditorPath,
-  getApksignerPath,
-  getJavaPath,
-  getTemplateApkPath,
-  getZipalignPath
-} from './path'
+import { getApkEditorPath, getJavaPath, getTemplateApkPath, getUberApkSignerPath } from './path'
 import { KnownError } from '../../shared/KnownError'
 
 const noOpProgress: ProgressCallback = () => {}
@@ -29,17 +23,13 @@ export const build = async (
     const templateApkPath = await getTemplateApkPath()
     const apkEditorPath = await getApkEditorPath()
     const javaPath = await getJavaPath()
-    const apksignerPath = await getApksignerPath()
-    const zipalignPath = await getZipalignPath()
+    const uberApkSignerPath = await getUberApkSignerPath()
     const buildPath = path.join(outputPath, 'build')
 
     const { appName, packageName, versionName, versionCode } = appInfo
 
     const apkFileName = [packageName, versionName, `build${versionCode}`].join('-')
     const unsignedApkPath = path.join(outputPath, `${apkFileName}-unsigned.apk`)
-    const alignedApkPath = path.join(outputPath, `${apkFileName}-aligned.apk`)
-    const signedApkPath = path.join(outputPath, `${apkFileName}-signed.apk`)
-    const idsigPath = signedApkPath + '.idsig'
 
     console.log('\x1b[96m')
     console.log(`App name: ${appName}`)
@@ -52,10 +42,7 @@ export const build = async (
 
     await Promise.allSettled([
       fs.rm(buildPath, { recursive: true, force: true }),
-      fs.rm(unsignedApkPath, { force: true }),
-      fs.rm(alignedApkPath, { force: true }),
-      fs.rm(signedApkPath, { force: true }),
-      fs.rm(idsigPath, { force: true })
+      fs.rm(unsignedApkPath, { force: true })
     ])
 
     onProgress({ message: 'decompiling_template_apk', stage: 'RUNNING', percentage: 20 })
@@ -174,20 +161,6 @@ export const build = async (
       throw new KnownError('build_apk_failed')
     })
 
-    onProgress({ message: 'aligning_apk', stage: 'RUNNING', percentage: 80 })
-
-    // 对齐
-    await executeCommand(
-      zipalignPath,
-      ['-v', '-p', '4', unsignedApkPath, alignedApkPath],
-      'APK alignment'
-    ).catch(() => {
-      throw new KnownError('apk_alignment_failed')
-    })
-
-    await fs.rm(unsignedApkPath, { force: true })
-    await fs.rename(alignedApkPath, unsignedApkPath)
-
     onProgress({ message: 'signing_apk', stage: 'RUNNING', percentage: 90 })
 
     // 签名
@@ -196,27 +169,19 @@ export const build = async (
         javaPath,
         [
           '-jar',
-          apksignerPath,
-          'sign',
+          uberApkSignerPath,
+          '-a',
+          unsignedApkPath,
+          '--out',
+          outputPath,
           '--ks',
           signConfig.storeFile,
-          '--ks-key-alias',
+          '--ksAlias',
           signConfig.keyAlias,
-          '--ks-pass',
-          `pass:${signConfig.storePassword}`,
-          '--key-pass',
-          `pass:${signConfig.keyPassword}`,
-          '--v1-signing-enabled',
-          'true',
-          '--v2-signing-enabled',
-          'true',
-          '--v3-signing-enabled',
-          'true',
-          '--v4-signing-enabled',
-          'true',
-          '--out',
-          signedApkPath,
-          alignedApkPath
+          '--ksPass',
+          signConfig.storePassword,
+          '--ksKeyPass',
+          signConfig.keyPassword
         ],
         'APK signing'
       ).catch(() => {

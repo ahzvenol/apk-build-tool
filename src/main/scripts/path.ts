@@ -33,11 +33,11 @@ export const getJavaPath = (): Promise<string> =>
   Promise.try(() => {
     switch (process.platform) {
       case 'win32':
-        return path.join(getLibPath(), 'jdk-21', 'bin', 'java.exe')
+        return path.join(getLibPath(), 'jdk', 'bin', 'java.exe')
       case 'darwin':
-        return path.join(getLibPath(), 'jdk-21', 'Contents', 'Home', 'bin', 'java')
+        return path.join(getLibPath(), 'jdk', 'Contents', 'Home', 'bin', 'java')
       case 'linux':
-        return path.join(getLibPath(), 'jdk-21', 'bin', 'java')
+        return path.join(getLibPath(), 'jdk', 'bin', 'java')
       default:
         throw process.exit(1)
     }
@@ -52,11 +52,11 @@ export const getKeytoolPath = (): Promise<string> =>
   Promise.try(() => {
     switch (process.platform) {
       case 'win32':
-        return path.join(getLibPath(), 'jdk-21', 'bin', 'keytool.exe')
+        return path.join(getLibPath(), 'jdk', 'bin', 'keytool.exe')
       case 'darwin':
-        return path.join(getLibPath(), 'jdk-21', 'Contents', 'Home', 'bin', 'keytool')
+        return path.join(getLibPath(), 'jdk', 'Contents', 'Home', 'bin', 'keytool')
       case 'linux':
-        return path.join(getLibPath(), 'jdk-21', 'bin', 'keytool')
+        return path.join(getLibPath(), 'jdk', 'bin', 'keytool')
       default:
         throw process.exit(1)
     }
@@ -67,20 +67,9 @@ export const getKeytoolPath = (): Promise<string> =>
       throw new KnownError('jdk_not_found')
     })
 
-export const getApksignerPath = (): Promise<string> =>
-  Promise.resolve(path.join(getLibPath(), 'build-tools', 'lib', 'apksigner.jar'))
+export const getUberApkSignerPath = (): Promise<string> =>
+  Promise.resolve(path.join(getLibPath(), 'uber-apk-signer.jar'))
     .then((path) => fs.access(path).then(() => path))
-    .catch(() => which('apksigner'))
     .catch(() => {
-      throw new KnownError('build_tools_not_found')
-    })
-
-export const getZipalignPath = (): Promise<string> =>
-  Promise.resolve(
-    path.join(getLibPath(), 'build-tools', `zipalign${process.platform === 'win32' ? '.exe' : ''}`)
-  )
-    .then((path) => fs.access(path).then(() => path))
-    .catch(() => which('zipalign'))
-    .catch(() => {
-      throw new KnownError('build_tools_not_found')
+      throw new KnownError('uber_apk_signer_not_found')
     })

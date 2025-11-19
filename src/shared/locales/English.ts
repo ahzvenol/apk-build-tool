@@ -46,7 +46,7 @@ export const English = {
   apkeditor_not_found: 'APKEditor not found',
   template_apk_not_found: 'Template apk not found',
   jdk_not_found: 'JDK not found',
-  build_tools_not_found: 'Build tools not found',
+  uber_apk_signer_not_found: 'Uber APK Signer not found',
   cleaning_build_dir: 'Cleaning build directory',
   decompiling_template_apk: 'Decompiling template APK',
   apk_decompilation_failed: 'APK decompilation failed',
