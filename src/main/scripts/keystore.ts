@@ -5,14 +5,14 @@ import { Dname, Keystore } from '../../shared/types/build'
 const dnameToString = (dname: Dname): string | null => {
   const parts: string[] = []
 
-  if (!dname.firstAndLastName?.length) return null
+  if (!dname.firstAndLastName.length) return null
 
   parts.push(`CN=${dname.firstAndLastName}`)
-  if (dname.organizationalUnit?.length) parts.push(`OU=${dname.organizationalUnit}`)
-  if (dname.organization?.length) parts.push(`O=${dname.organization}`)
-  if (dname.cityOrLocality?.length) parts.push(`L=${dname.cityOrLocality}`)
-  if (dname.stateOrProvince?.length) parts.push(`ST=${dname.stateOrProvince}`)
-  if (dname.countryCode?.length) parts.push(`C=${dname.countryCode}`)
+  if (dname.organizationalUnit.length) parts.push(`OU=${dname.organizationalUnit}`)
+  if (dname.organization.length) parts.push(`O=${dname.organization}`)
+  if (dname.cityOrLocality.length) parts.push(`L=${dname.cityOrLocality}`)
+  if (dname.stateOrProvince.length) parts.push(`ST=${dname.stateOrProvince}`)
+  if (dname.countryCode.length) parts.push(`C=${dname.countryCode}`)
 
   return parts.join(',')
 }

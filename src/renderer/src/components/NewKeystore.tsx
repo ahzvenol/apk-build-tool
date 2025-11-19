@@ -9,7 +9,7 @@ import {
   DialogTrigger,
   Text,
   InfoLabel,
-  Input,
+  Input
 } from '@fluentui/react-components'
 import { createKeystore, selectSaveKeystore } from '../invoke'
 import styles from '../app.module.css'
@@ -47,9 +47,9 @@ export const NewKeystore = ({ setKeystore }: NewKeystoreDialogProps): React.JSX.
 
   const isCreateDisabled = (): boolean =>
     !newKeystore.storeFile() ||
-    (newKeystore.storePassword()?.length ?? 0) < 6 ||
+    newKeystore.storePassword().length < 6 ||
     !newKeystore.keyAlias() ||
-    (newKeystore.keyPassword()?.length ?? 0) < 6 ||
+    newKeystore.keyPassword().length < 6 ||
     !newKeystore.dname() ||
     !newKeystore.dname.firstAndLastName()
 
@@ -149,7 +149,7 @@ export const NewKeystore = ({ setKeystore }: NewKeystoreDialogProps): React.JSX.
                 step={1}
                 min={1}
                 style={{ flex: 1 }}
-                value={newKeystore.validity()?.toString() || ''}
+                value={newKeystore.validity().toString()}
                 onChange={(_ev, data) => newKeystore.validity(Number(data.value))}
               />
             </div>
@@ -161,7 +161,7 @@ export const NewKeystore = ({ setKeystore }: NewKeystoreDialogProps): React.JSX.
               <Input
                 type="text"
                 style={{ flex: 1 }}
-                value={newKeystore.dname.firstAndLastName() || ''}
+                value={newKeystore.dname.firstAndLastName()}
                 onChange={(_ev, data) => newKeystore.dname.firstAndLastName(data.value)}
               />
             </div>
@@ -171,7 +171,7 @@ export const NewKeystore = ({ setKeystore }: NewKeystoreDialogProps): React.JSX.
               <Input
                 type="text"
                 style={{ flex: 1 }}
-                value={newKeystore.dname.organizationalUnit() || ''}
+                value={newKeystore.dname.organizationalUnit()}
                 onChange={(_ev, data) => newKeystore.dname.organizationalUnit(data.value)}
               />
             </div>
@@ -181,7 +181,7 @@ export const NewKeystore = ({ setKeystore }: NewKeystoreDialogProps): React.JSX.
               <Input
                 type="text"
                 style={{ flex: 1 }}
-                value={newKeystore.dname.organization() || ''}
+                value={newKeystore.dname.organization()}
                 onChange={(_ev, data) => newKeystore.dname.organization(data.value)}
               />
             </div>
@@ -191,7 +191,7 @@ export const NewKeystore = ({ setKeystore }: NewKeystoreDialogProps): React.JSX.
               <Input
                 type="text"
                 style={{ flex: 1 }}
-                value={newKeystore.dname.cityOrLocality() || ''}
+                value={newKeystore.dname.cityOrLocality()}
                 onChange={(_ev, data) => newKeystore.dname.cityOrLocality(data.value)}
               />
             </div>
@@ -201,7 +201,7 @@ export const NewKeystore = ({ setKeystore }: NewKeystoreDialogProps): React.JSX.
               <Input
                 type="text"
                 style={{ flex: 1 }}
-                value={newKeystore.dname.stateOrProvince() || ''}
+                value={newKeystore.dname.stateOrProvince()}
                 onChange={(_ev, data) => newKeystore.dname.stateOrProvince(data.value)}
               />
             </div>
@@ -211,7 +211,7 @@ export const NewKeystore = ({ setKeystore }: NewKeystoreDialogProps): React.JSX.
               <Input
                 type="text"
                 style={{ flex: 1 }}
-                value={newKeystore.dname.countryCode() || ''}
+                value={newKeystore.dname.countryCode()}
                 onChange={(_ev, data) => newKeystore.dname.countryCode(data.value)}
               />
             </div>

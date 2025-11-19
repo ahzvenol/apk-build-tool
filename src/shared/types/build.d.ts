@@ -24,12 +24,12 @@ export interface Keystore {
 }
 
 export interface Dname {
-  firstAndLastName?: string
-  organizationalUnit?: string
-  organization?: string
-  cityOrLocality?: string
-  stateOrProvince?: string
-  countryCode?: string
+  firstAndLastName: string
+  organizationalUnit: string
+  organization: string
+  cityOrLocality: string
+  stateOrProvince: string
+  countryCode: string
 }
 
 export interface BuildOptions {
